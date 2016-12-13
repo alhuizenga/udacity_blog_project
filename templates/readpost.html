@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Blog</title>
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+  </head>
+  <body>
+    <header>
+      <h1>Blog</h1>
+      {% if username %}
+      <p>Logged in as {{username}}</p>
+      {% endif %}
+    </header>
+    <nav>
+      <p><a href="/">Home</a></p>
+      {% if username %}
+      <p><a href="/logout">Logout</a></p>
+      <p><a href="/post">New Post</a></p>
+      <p><a href="/my_posts">My Posts</a></p>
+      {% else %}
+      <p><a href="/signup">Sign Up</a></p>
+      <p><a href="/login">Login</a></p>
+      {% endif %}
+    </nav>
+    <content>
+        <div class="post_header">
+            <div class="post_subject">
+                <p>{{subject}}</p>
+                <p>{{created}}</p>
+                <p>By {{owner}}</p>
+            </div>
+            <div class="post_content">
+                <p>{{content}}</p>
+            </div>
+        </div>
+    </content>
+  </body>
+</html>
+
+

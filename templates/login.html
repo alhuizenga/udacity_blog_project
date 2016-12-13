@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Login</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+  </head>
+  <body>
+    <header>
+      <h2>Login</h2>
+    </header>
+    <nav>
+      <p><a href="/">Home</a></p>
+      <p><a href="/signup">Sign Up</a></p>
+    </nav>
+    <content>
+      <form method="post">
+        <table>
+          <tr>
+            <td class="label">
+              Username
+            </td>
+            <td>
+              <input type="text" name="username" value="{{username}}">
+            </td>
+            <td class="error">
+                {{username_error}}
+                {{username_nonexistent_error}}
+            </td>
+          </tr>
+          <tr>
+            <td class="label">
+              Password
+            </td>
+            <td>
+              <input type="password" name="password" value="{{password}}">
+            </td>
+            <td class="error">
+            {{password_error}}
+            </td>
+          </tr>
+        </table>
+        <input type="submit">
+      </form>
+    </content>
+  </body>
+</html>

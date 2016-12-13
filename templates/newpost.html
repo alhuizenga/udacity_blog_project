@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>New Blog Post</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+  </head>
+  <body>
+    <header>
+      <h1>New Blog Post</h1>
+      <p>Logged in as {{username}}</p>
+    </header>
+    <nav>
+      <p><a href="/">Home</a></p>
+      <p><a href="/logout">Logout</a></p>
+      <p><a href="/my_posts">My Posts</a></p>
+    </nav>
+    <content>
+      <form method="post">
+        <label>Subject<br>
+          <input type="text" name="subject" value="{{subject}}">
+        </label>
+        <br>
+        <br>
+        <label>Content<br>
+          <textarea name="content">{{content}}</textarea>
+        </label>
+        <p class="error">{{error}}</p>
+        <br>
+        <input type="submit">
+      </form>
+    </content>
+  </body>
+</html>

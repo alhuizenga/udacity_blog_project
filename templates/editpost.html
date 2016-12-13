@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Edit Blog Post</title>
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="../javascript/jquery.are-you-sure.js"></script>
+    <script>
+
+      $(document).ready(function(){
+        $('form').areYouSure();
+      });
+
+</script>
+  </head>
+  <body>
+    <header>
+      <h1>Edit Blog Post</h1>
+      <p>Logged in as {{username}}</p>
+    </header>
+    <nav>
+      <p><a href="/">Home</a></p>
+      <p><a href="/logout">Logout</a></p>
+      <p><a href="/my_posts">My Posts</a></p>
+    </nav>
+    <content>
+      <p>{{created}}</p>
+      <p>By {{owner}}</p>
+      <form method="post">
+        <label>Subject<br>
+          <input type="text" name="subject" value="{{subject}}">
+        </label>
+        <br>
+        <br>
+        <label>Content<br>
+          <textarea name="content">{{content}}</textarea>
+        </label>
+        <p class="error">{{error}}</p>
+        <br>
+        <input type="submit" value="Save">
+      </form>
+    </content>
+  </body>
+</html>
