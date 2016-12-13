@@ -94,6 +94,7 @@ class PostHandler(Handler):
       p.put()
       post_id = p.key().id()
       self.redirect("/blog/{}".format(post_id))
+      # self.redirect("/")
     else:
       error = "Please fill in both the Subject and Content fields."
       self.render_form(subject, content, username, error)
@@ -403,7 +404,7 @@ class Blog_post(db.Model):
 
   @classmethod
   def by_id(cls, post_id):
-    return User.get_by_id(post_id, parent = blog_key())
+    return Blog_post.get_by_id(post_id, parent = blog_key())
 
 # Parent key for all blog posts
 def blog_key(name = 'default'):
