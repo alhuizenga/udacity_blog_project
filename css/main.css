@@ -1,0 +1,51 @@
+/** {
+  border: 1px solid red;
+}*/
+
+header, content, nav, footer, section, article, div {
+  box-sizing: border-box;
+}
+
+body {
+  width: 100%;
+  padding-right: 20px;
+  margin-top: 40px;
+  margin-bottom: 20px;
+  font-family: "Lato", sans-serif;
+  font-size: 16px;
+  color: #4a4b4c;
+}
+
+h1, h2, h3, h4, h5 {
+  margin: 0;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+h1 {
+  font-weight: lighter;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+hr {
+  border-color: #7d97ad;
+  border-width: 2px;
+}
+
+.stuff {
+  font-weight: bold;
+  font-size: 22px;
+}
+
+.label {
+  text-align: right
+}
+
+.error {
+  color: red
+}
