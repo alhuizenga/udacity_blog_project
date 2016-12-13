@@ -65,7 +65,7 @@ class BlogHandler(Handler):
     q.ancestor(blog_key())
     q.order('-created')
     blog_posts = q.run()
-    self.render("blog.html", blog_posts=blog_posts, username=username)
+    self.render("home.html", blog_posts=blog_posts, username=username)
 
   def get(self):
     self.render_blog()
@@ -80,7 +80,8 @@ class PostHandler(Handler):
                 error=error)
 
   def get(self):
-    self.render_form()
+    username = self.user.name
+    self.render_form(username=username)
 
   def post(self):
     username = self.user.name
@@ -94,20 +95,20 @@ class PostHandler(Handler):
       p.put()
       post_id = p.key().id()
       self.redirect("/blog/{}".format(post_id))
-      # self.redirect("/")
     else:
       error = "Please fill in both the Subject and Content fields."
       self.render_form(subject, content, username, error)
 
 class ReadPostHandler(Handler):
 
-  def render_post(self, subject="", content="", created="", username="", owner=""):
+  def render_post(self, subject="", content="", created="", username="", owner="", post_id=""):
     self.render("readpost.html",
                subject=subject,
                content=content,
                created=created,
                username=username,
-               owner=owner)
+               owner=owner,
+               post_id=post_id)
 
   def get(self, post_id):
     if self.user:
@@ -118,7 +119,7 @@ class ReadPostHandler(Handler):
     content = a.content
     created = a.created.date()
     owner = a.owner
-    self.render_post(subject, content, created, username, owner)
+    self.render_post(subject, content, created, username, owner, post_id)
 
 class EditPostHandler(Handler):
 
@@ -163,11 +164,24 @@ class EditPostHandler(Handler):
 
 class DeletePostHandler(Handler):
 
-    def get(self, post_id):
-      post_id = int(post_id)
-      a = Blog_post.by_id(post_id)
-      db.delete(a.key())
-      self.redirect('/')
+  def get(self, post_id):
+    post_id = int(post_id)
+    a = Blog_post.by_id(post_id)
+    db.delete(a.key())
+    self.redirect('/')
+
+class MyPostsHandler(Handler):
+
+  def render_posts(self, blog_posts="", username=""):
+    username = self.user.name
+    q = Blog_post.all()
+    q.filter("owner =", username)
+    q.order('-created')
+    blog_posts = q.run()
+    self.render("my_posts.html", blog_posts=blog_posts, username=username)
+
+  def get(self):
+    self.render_posts()
 
 # Session management handlers
 
@@ -294,6 +308,7 @@ class LogoutHandler(Handler):
 app = webapp2.WSGIApplication([
   ('/', BlogHandler),
   ('/post', PostHandler),
+  ('/my_posts', MyPostsHandler),
   ('/signup', SignupHandler),
   ('/login', LoginHandler),
   ('/logout', LogoutHandler),
