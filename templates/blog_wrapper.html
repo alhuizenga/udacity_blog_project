@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Forum</title>
+    {% block css %}{% endblock %}
+  </head>
+  <body>
+    <header>
+      <h1>{% block heading %}{% endblock %}</h1>
+      {% if username %}
+      <p>Logged in as {{username}}</p>
+      {% endif %}
+      <hr>
+    </header>
+    <nav>
+      {% if username %}
+      <p><a href="/">Home</a></p>
+      <p><a href="/logout">Logout</a></p>
+      <p><a href="/post">New Post</a></p>
+      <p><a href="/my_posts">My Posts</a></p>
+      {% else %}
+      <p><a href="/signup">Sign Up</a></p>
+      <p><a href="/login">Login</a></p>
+      {% endif %}
+      <hr>
+    </nav>
+    <content>
+      {% block content %}
+      {% endblock %}
+    </content>
+    <footer>
+      <div class="legal">
+        <p>All rights reserved.</p>
+      </div>
+    </footer>
+  </body>
+</html>

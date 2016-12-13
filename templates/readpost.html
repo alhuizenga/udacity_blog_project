@@ -1,40 +1,25 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Blog</title>
-    <link rel="stylesheet" href="../css/bootstrap.min.css">
-  </head>
-  <body>
-    <header>
-      <h1>Blog</h1>
-      {% if username %}
-      <p>Logged in as {{username}}</p>
+{% extends "blog_wrapper.html" %}
+{% block heading %}Forum{% endblock %}
+{% block css %}
+<link rel="stylesheet" href="../css/bootstrap.min.css">
+{% endblock %}
+{% block content %}
+  <div class="blog_post">
+    <div class="post_header">
+      <p>{{subject}}</p>
+      <p>{{created}}</p>
+      <p>By {{owner}}</p>
+    </div>
+    <div class="post_content">
+      <p>{{content}}</p>
+    </div>
+    <div class="post_actions">
+      {% if owner == username %}
+      <p><a href="/delete/{{post_id}}">Delete</a></p>
+      <p><a href="/edit/{{post_id}}">Edit</a></p>
       {% endif %}
-    </header>
-    <nav>
-      <p><a href="/">Home</a></p>
-      {% if username %}
-      <p><a href="/logout">Logout</a></p>
-      <p><a href="/post">New Post</a></p>
-      <p><a href="/my_posts">My Posts</a></p>
-      {% else %}
-      <p><a href="/signup">Sign Up</a></p>
-      <p><a href="/login">Login</a></p>
-      {% endif %}
-    </nav>
-    <content>
-        <div class="post_header">
-            <div class="post_subject">
-                <p>{{subject}}</p>
-                <p>{{created}}</p>
-                <p>By {{owner}}</p>
-            </div>
-            <div class="post_content">
-                <p>{{content}}</p>
-            </div>
-        </div>
-    </content>
-  </body>
-</html>
-
+      <p><a href="/comment/{{post_id}}">Comment</a></p>
+    </div>
+  </div>
+{% endblock %}
 

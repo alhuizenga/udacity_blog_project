@@ -1,31 +1,15 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Edit Blog Post</title>
-    <link rel="stylesheet" href="../css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-    <script src="../javascript/jquery.are-you-sure.js"></script>
-    <script>
-
-      $(document).ready(function(){
-        $('form').areYouSure();
-      });
-
-</script>
-  </head>
-  <body>
-    <header>
-      <h1>Edit Blog Post</h1>
-      <p>Logged in as {{username}}</p>
-    </header>
-    <nav>
-      <p><a href="/">Home</a></p>
-      <p><a href="/logout">Logout</a></p>
-      <p><a href="/my_posts">My Posts</a></p>
-    </nav>
-    <content>
+{% extends "blog_wrapper.html" %}
+{% block heading %}Edit Post{% endblock %}
+{% block css %}
+<link rel="stylesheet" href="../css/bootstrap.min.css">
+{% endblock %}
+{% block content %}
+  <div class="blog_post">
+    <div class="post_header">
       <p>{{created}}</p>
       <p>By {{owner}}</p>
+    </div>
+    <div class="post_form">
       <form method="post">
         <label>Subject<br>
           <input type="text" name="subject" value="{{subject}}">
@@ -39,6 +23,7 @@
         <br>
         <input type="submit" value="Save">
       </form>
-    </content>
-  </body>
-</html>
+    </div>
+  </div>
+  <hr>
+{% endblock %}
