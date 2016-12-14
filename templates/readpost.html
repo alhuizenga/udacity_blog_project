@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="../css/bootstrap.min.css">
 {% endblock %}
 {% block content %}
+
   <div class="blog_post">
     <div class="post_header">
       <p>{{subject}}</p>
@@ -16,25 +17,32 @@
     <div class="post_data">
       <p>{{comment_count}} comments</p>
       <p>{{like_count}} likes</p>
+{% if liked == True %}
+      <p>You liked this!</p>
+{% endif %}
     </div>
     <div class="post_actions">
-      {% if owner == username %}
+{% if owner == username %}
       <p><a href="/delete/{{post_id}}">Delete</a></p>
       <p><a href="/edit/{{post_id}}">Edit</a></p>
-      {% endif %}
-      {% if username %}
+{% endif %}
+{% if username %}
       <p><a href="/comment/{{post_id}}">Comment</a></p>
+{% if liked == True %}
+      <p><a href="/unlike/{{post_id}}?source_url={{source}}">Unlike</a></p>
+{% else %}
       <p><a href="/like/{{post_id}}?source_url={{source}}">Like</a></p>
-      {% endif %}
+{% endif %}
+{% endif %}
     </div>
     <hr>
     <div class="comments">
       <h2>Comments</h2>
-      {% for comment in comments %}
+{% for comment in comments %}
         <p>{{comment.comment}}</p>
         <p>By {{comment.owner}} on {{comment.created.date()}}</p>
         <br>
-      {% endfor %}
+{% endfor %}
     </div>
   </div>
 {% endblock %}
