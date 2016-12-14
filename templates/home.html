@@ -7,20 +7,28 @@
   {% for blog_post in blog_posts %}
   <div class="blog_post">
     <div class="post_header">
-      <p><a href="/blog/{{blog_post.key().id()}}">{{blog_post.subject}}</a></p>
+      <p><a href="/posts/{{blog_post.key().id()}}">{{blog_post.subject}}</a></p>
       <p>{{blog_post.created.date()}}</p>
       <p>By {{blog_post.owner}}</p>
     </div>
     <div class="post_content">
       <p>{{blog_post.content}}</p>
     </div>
+    <div class="post_data">
+      <p>{{blog_post.comment_count}} comments</p>
+      <p>{{blog_post.like_count}} likes</p>
+    </div>
     <div class="post_actions">
       {% if blog_post.owner == username %}
       <p><a href="/delete/{{blog_post.key().id()}}">Delete</a></p>
       <p><a href="/edit/{{blog_post.key().id()}}">Edit</a></p>
       {% endif %}
+      {% if username %}
       <p><a href="/comment/{{blog_post.key().id()}}">Comment</a></p>
+      <p><a href="/like/{{blog_post.key().id()}}?source_url={{source}}">Like</a></p>
+      {% endif %}
     </div>
+  </div>
   <hr>
   {% endfor %}
 {% endblock %}

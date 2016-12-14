@@ -13,12 +13,28 @@
     <div class="post_content">
       <p>{{content}}</p>
     </div>
+    <div class="post_data">
+      <p>{{comment_count}} comments</p>
+      <p>{{like_count}} likes</p>
+    </div>
     <div class="post_actions">
       {% if owner == username %}
       <p><a href="/delete/{{post_id}}">Delete</a></p>
       <p><a href="/edit/{{post_id}}">Edit</a></p>
       {% endif %}
+      {% if username %}
       <p><a href="/comment/{{post_id}}">Comment</a></p>
+      <p><a href="/like/{{post_id}}?source_url={{source}}">Like</a></p>
+      {% endif %}
+    </div>
+    <hr>
+    <div class="comments">
+      <h2>Comments</h2>
+      {% for comment in comments %}
+        <p>{{comment.comment}}</p>
+        <p>By {{comment.owner}} on {{comment.created.date()}}</p>
+        <br>
+      {% endfor %}
     </div>
   </div>
 {% endblock %}
