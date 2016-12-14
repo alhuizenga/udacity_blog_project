@@ -101,8 +101,8 @@ class PostHandler(Handler):
 class ReadPostHandler(Handler):
 
   def check_like(self, post_id, username):
-    like_query = db.GqlQuery("SELECT * FROM Like WHERE post_id =:1 AND username =:2", post_id, username)
-    like = like_query.get()
+    parent = like_key(post_id, username)
+    like = Like.all().ancestor(parent).get()
     if like:
       if like.like_status == True:
         return True
@@ -263,7 +263,8 @@ class LikeHandler(Handler):
     q = Blog_post.by_id(post_id_int)
     q.like_count += 1
     q.put()
-    l = Like(username=username, post_id=post_id, like_status=True)
+    parent = like_key(post_id, username)
+    l = Like(parent=parent, username=username, post_id=post_id, like_status=True)
     l.put()
     source = self.request.get("source_url")
     source = str(source)
@@ -277,8 +278,8 @@ class UnlikeHandler(Handler):
     q = Blog_post.by_id(post_id_int)
     q.like_count -= 1
     q.put()
-    like_query = db.GqlQuery("SELECT * FROM Like WHERE post_id =:1 AND username =:2", post_id, username)
-    like = like_query.get()
+    parent = like_key(post_id, username)
+    like = Like.all().ancestor(parent).get()
     like.like_status = False
     like.put()
     source = self.request.get("source_url")
