@@ -100,6 +100,13 @@ class PostHandler(Handler):
 
 class ReadPostHandler(Handler):
 
+  def check_like(self, post_id, username):
+    like_query = db.GqlQuery("SELECT * FROM Like WHERE post_id =:1 AND username =:2", post_id, username)
+    like = like_query.get()
+    if like:
+      if like.like_status == True:
+        return True
+
   def render_post(self,
                   subject="",
                   content="",
@@ -110,7 +117,8 @@ class ReadPostHandler(Handler):
                   username="",
                   owner="",
                   post_id="",
-                  source=""):
+                  source="",
+                  liked=""):
 
     self.render("readpost.html",
                subject=subject,
@@ -122,7 +130,8 @@ class ReadPostHandler(Handler):
                username=username,
                owner=owner,
                post_id=post_id,
-               source=source)
+               source=source,
+               liked=liked)
 
   def get(self, post_id):
     if self.user:
@@ -138,6 +147,7 @@ class ReadPostHandler(Handler):
     comment_key = p.key()
     comments = Comment.all().ancestor(comment_key).order('-created').run()
     source = self.request.url
+    liked = self.check_like(post_id, username)
     self.render_post(subject,
                     content,
                     created,
@@ -147,7 +157,8 @@ class ReadPostHandler(Handler):
                     username,
                     owner,
                     post_id,
-                    source)
+                    source,
+                    liked)
 
 class EditPostHandler(Handler):
 
@@ -247,10 +258,29 @@ class CommentHandler(Handler):
 class LikeHandler(Handler):
 
   def get(self, post_id):
-    post_id = int(post_id)
-    q = Blog_post.by_id(post_id)
+    username = self.user.name
+    post_id_int = int(post_id)
+    q = Blog_post.by_id(post_id_int)
     q.like_count += 1
     q.put()
+    l = Like(username=username, post_id=post_id, like_status=True)
+    l.put()
+    source = self.request.get("source_url")
+    source = str(source)
+    self.redirect(source)
+
+class UnlikeHandler(Handler):
+
+  def get(self, post_id):
+    username = self.user.name
+    post_id_int = int(post_id)
+    q = Blog_post.by_id(post_id_int)
+    q.like_count -= 1
+    q.put()
+    like_query = db.GqlQuery("SELECT * FROM Like WHERE post_id =:1 AND username =:2", post_id, username)
+    like = like_query.get()
+    like.like_status = False
+    like.put()
     source = self.request.get("source_url")
     source = str(source)
     self.redirect(source)
@@ -389,6 +419,7 @@ app = webapp2.WSGIApplication([
   webapp2.Route(r'/delete/<post_id>', handler=DeletePostHandler, name='post_id'),
   webapp2.Route(r'/comment/<post_id>', handler=CommentHandler, name='post_id'),
   webapp2.Route(r'/like/<post_id>', handler=LikeHandler, name='post_id'),
+  webapp2.Route(r'/unlike/<post_id>', handler=UnlikeHandler, name='post_id'),
       ], debug=True)
 
 # Validation functions
@@ -516,4 +547,7 @@ class Comment(db.Model):
 class Like(db.Model):
   post_id = db.StringProperty(required = True)
   username = db.StringProperty(required = True)
-  like_status = db.BooleanProperty(default = False)
+  like_status = db.BooleanProperty(True)
+
+def like_key(post_id, username):
+  return db.Key.from_path(post_id, username)
