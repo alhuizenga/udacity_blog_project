@@ -50,6 +50,7 @@ class Handler(webapp2.RequestHandler):
     webapp2.RequestHandler.initialize(self, *a, **kw)
     uid = self.read_secure_cookie('user_id')
     if uid:
+      self.uid = uid
       self.user = User.by_id(int(uid))
     else:
       self.user = None
@@ -58,11 +59,12 @@ class Handler(webapp2.RequestHandler):
 
 class BlogHandler(Handler):
 
-  def render_blog(self, blog_posts="", username=""):
+  def render_blog(self, blog_posts="", username="", source=""):
     if self.user:
       username = self.user.name
+    source = self.request.url
     blog_posts = Blog_post.all().ancestor(blog_key()).order('-created').run()
-    self.render("home.html", blog_posts=blog_posts, username=username)
+    self.render("home.html", blog_posts=blog_posts, username=username, source=source)
 
   def get(self):
     self.render_blog()
@@ -107,7 +109,8 @@ class ReadPostHandler(Handler):
                   like_count="",
                   username="",
                   owner="",
-                  post_id=""):
+                  post_id="",
+                  source=""):
 
     self.render("readpost.html",
                subject=subject,
@@ -118,13 +121,14 @@ class ReadPostHandler(Handler):
                like_count=like_count,
                username=username,
                owner=owner,
-               post_id=post_id)
+               post_id=post_id,
+               source=source)
 
   def get(self, post_id):
     if self.user:
       username = self.user.name
-    post_id = int(post_id)
-    p = Blog_post.by_id(post_id)
+    post_id_int = int(post_id)
+    p = Blog_post.by_id(post_id_int)
     subject = p.subject
     content = p.content
     created = p.created.date()
@@ -133,7 +137,17 @@ class ReadPostHandler(Handler):
     like_count = p.like_count
     comment_key = p.key()
     comments = Comment.all().ancestor(comment_key).order('-created').run()
-    self.render_post(subject, content, created, comments, comment_count, like_count, username, owner, post_id)
+    source = self.request.url
+    self.render_post(subject,
+                    content,
+                    created,
+                    comments,
+                    comment_count,
+                    like_count,
+                    username,
+                    owner,
+                    post_id,
+                    source)
 
 class EditPostHandler(Handler):
 
@@ -188,10 +202,7 @@ class MyPostsHandler(Handler):
 
   def render_posts(self, blog_posts="", username=""):
     username = self.user.name
-    q = Blog_post.all()
-    q.filter("owner =", username)
-    q.order('-created')
-    blog_posts = q.run()
+    blog_posts = Blog_post.all().filter("owner =", username).order('-created').run()
     self.render("my_posts.html", blog_posts=blog_posts, username=username)
 
   def get(self):
@@ -226,12 +237,23 @@ class CommentHandler(Handler):
     if comment:
       c = Comment(parent=parent, owner=owner, comment=comment)
       c.put()
-      q.comment_count +=1
+      q.comment_count += 1
       q.put()
       self.redirect("/posts/{}".format(post_id))
     else:
       error = "Please add your comment."
       self.render_form(subject, comment, username, error, post_id)
+
+class LikeHandler(Handler):
+
+  def get(self, post_id):
+    post_id = int(post_id)
+    q = Blog_post.by_id(post_id)
+    q.like_count += 1
+    q.put()
+    source = self.request.get("source_url")
+    source = str(source)
+    self.redirect(source)
 
 # Session management handlers
 
@@ -366,6 +388,7 @@ app = webapp2.WSGIApplication([
   webapp2.Route(r'/edit/<post_id>', handler=EditPostHandler, name='post_id'),
   webapp2.Route(r'/delete/<post_id>', handler=DeletePostHandler, name='post_id'),
   webapp2.Route(r'/comment/<post_id>', handler=CommentHandler, name='post_id'),
+  webapp2.Route(r'/like/<post_id>', handler=LikeHandler, name='post_id'),
       ], debug=True)
 
 # Validation functions
@@ -466,10 +489,10 @@ class Blog_post(db.Model):
   owner = db.StringProperty(required = True)
   subject = db.StringProperty(required = True)
   content = db.TextProperty(required = True)
-  comment_count = db.IntegerProperty(default = 0)
-  like_count = db.IntegerProperty(default = 0)
   created = db.DateTimeProperty(auto_now_add = True)
   last_modified = db.DateTimeProperty()
+  comment_count = db.IntegerProperty(default = 0)
+  like_count = db.IntegerProperty(default = 0)
 
   @classmethod
   def by_id(cls, post_id):
@@ -488,3 +511,9 @@ class Comment(db.Model):
   @classmethod
   def by_id(cls, comment_id, parent):
     return Comment.get_by_id(comment_id, parent)
+
+# Like kind
+class Like(db.Model):
+  post_id = db.StringProperty(required = True)
+  username = db.StringProperty(required = True)
+  like_status = db.BooleanProperty(default = False)
