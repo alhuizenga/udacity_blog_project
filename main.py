@@ -61,10 +61,7 @@ class BlogHandler(Handler):
   def render_blog(self, blog_posts="", username=""):
     if self.user:
       username = self.user.name
-    q = Blog_post.all()
-    q.ancestor(blog_key())
-    q.order('-created')
-    blog_posts = q.run()
+    blog_posts = Blog_post.all().ancestor(blog_key()).order('-created').run()
     self.render("home.html", blog_posts=blog_posts, username=username)
 
   def get(self):
@@ -94,18 +91,31 @@ class PostHandler(Handler):
       p = Blog_post(parent=parent, owner=owner, subject=subject, content=content)
       p.put()
       post_id = p.key().id()
-      self.redirect("/blog/{}".format(post_id))
+      self.redirect("/posts/{}".format(post_id))
     else:
       error = "Please fill in both the Subject and Content fields."
       self.render_form(subject, content, username, error)
 
 class ReadPostHandler(Handler):
 
-  def render_post(self, subject="", content="", created="", username="", owner="", post_id=""):
+  def render_post(self,
+                  subject="",
+                  content="",
+                  created="",
+                  comments="",
+                  comment_count="",
+                  like_count="",
+                  username="",
+                  owner="",
+                  post_id=""):
+
     self.render("readpost.html",
                subject=subject,
                content=content,
                created=created,
+               comments=comments,
+               comment_count=comment_count,
+               like_count=like_count,
                username=username,
                owner=owner,
                post_id=post_id)
@@ -114,12 +124,16 @@ class ReadPostHandler(Handler):
     if self.user:
       username = self.user.name
     post_id = int(post_id)
-    a = Blog_post.by_id(post_id)
-    subject = a.subject
-    content = a.content
-    created = a.created.date()
-    owner = a.owner
-    self.render_post(subject, content, created, username, owner, post_id)
+    p = Blog_post.by_id(post_id)
+    subject = p.subject
+    content = p.content
+    created = p.created.date()
+    owner = p.owner
+    comment_count = p.comment_count
+    like_count = p.like_count
+    comment_key = p.key()
+    comments = Comment.all().ancestor(comment_key).order('-created').run()
+    self.render_post(subject, content, created, comments, comment_count, like_count, username, owner, post_id)
 
 class EditPostHandler(Handler):
 
@@ -182,6 +196,42 @@ class MyPostsHandler(Handler):
 
   def get(self):
     self.render_posts()
+
+class CommentHandler(Handler):
+
+  def render_form(self, subject="", comment="", username="", error="", post_id=""):
+    self.render("comment.html",
+                subject=subject,
+                comment=comment,
+                username=username,
+                error=error,
+                post_id=post_id)
+
+  def get(self, post_id):
+    username = self.user.name
+    post_id = int(post_id)
+    q = Blog_post.by_id(post_id)
+    subject = q.subject
+    self.render_form(subject=subject, username=username, post_id=post_id)
+
+  def post(self, post_id):
+    username = self.user.name
+    comment = self.request.get("comment")
+    owner = username
+    post_id = self.request.get("post_id")
+    post_id = int(post_id)
+    q = Blog_post.by_id(post_id)
+    parent = q.key()
+    subject = q.subject
+    if comment:
+      c = Comment(parent=parent, owner=owner, comment=comment)
+      c.put()
+      q.comment_count +=1
+      q.put()
+      self.redirect("/posts/{}".format(post_id))
+    else:
+      error = "Please add your comment."
+      self.render_form(subject, comment, username, error, post_id)
 
 # Session management handlers
 
@@ -312,10 +362,11 @@ app = webapp2.WSGIApplication([
   ('/signup', SignupHandler),
   ('/login', LoginHandler),
   ('/logout', LogoutHandler),
-  webapp2.Route(r'/blog/<post_id>', handler=ReadPostHandler, name='post_id'),
+  webapp2.Route(r'/posts/<post_id>', handler=ReadPostHandler, name='post_id'),
   webapp2.Route(r'/edit/<post_id>', handler=EditPostHandler, name='post_id'),
   webapp2.Route(r'/delete/<post_id>', handler=DeletePostHandler, name='post_id'),
-    ], debug=True)
+  webapp2.Route(r'/comment/<post_id>', handler=CommentHandler, name='post_id'),
+      ], debug=True)
 
 # Validation functions
 def validate_username(username):
@@ -415,7 +466,10 @@ class Blog_post(db.Model):
   owner = db.StringProperty(required = True)
   subject = db.StringProperty(required = True)
   content = db.TextProperty(required = True)
+  comment_count = db.IntegerProperty(default = 0)
+  like_count = db.IntegerProperty(default = 0)
   created = db.DateTimeProperty(auto_now_add = True)
+  last_modified = db.DateTimeProperty()
 
   @classmethod
   def by_id(cls, post_id):
@@ -424,3 +478,13 @@ class Blog_post(db.Model):
 # Parent key for all blog posts
 def blog_key(name = 'default'):
   return db.Key.from_path('blogs', name)
+
+# Comment kind
+class Comment(db.Model):
+  owner = db.StringProperty(required = True)
+  comment = db.TextProperty(required = True)
+  created = db.DateTimeProperty(auto_now_add = True)
+
+  @classmethod
+  def by_id(cls, comment_id, parent):
+    return Comment.get_by_id(comment_id, parent)
