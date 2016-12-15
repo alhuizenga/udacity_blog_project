@@ -88,7 +88,6 @@ class PostHandler(Handler):
     content = self.request.get("content")
     owner = username
     parent = blog_key()
-
     if subject and content:
       p = Blog_post(parent=parent, owner=owner, subject=subject, content=content)
       p.put()
@@ -136,6 +135,8 @@ class ReadPostHandler(Handler):
   def get(self, post_id):
     if self.user:
       username = self.user.name
+    else:
+      username = ""
     post_id_int = int(post_id)
     p = Blog_post.by_id(post_id_int)
     subject = p.subject
@@ -147,7 +148,10 @@ class ReadPostHandler(Handler):
     comment_key = p.key()
     comments = Comment.all().ancestor(comment_key).order('-created').run()
     source = self.request.url
-    liked = self.check_like(post_id, username)
+    if username != "":
+      liked = self.check_like(post_id, username)
+    else:
+      liked = ""
     self.render_post(subject,
                     content,
                     created,
