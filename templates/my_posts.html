@@ -1,26 +1,39 @@
 {% extends "blog_wrapper.html" %}
 {% block heading %}My Posts{% endblock %}
 {% block css %}
-<link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/main.css">
 {% endblock %}
 {% block content %}
   {% for blog_post in blog_posts %}
-  <div class="blog_post">
-    <div class="post_header">
-      <p><a href="/blog/{{blog_post.key().id()}}">{{blog_post.subject}}</a></p>
-      <p>{{blog_post.created.date()}}</p>
-      <p>By {{blog_post.owner}}</p>
+    <div class="subject_header row">
+      <div class="subject col-md-6">
+        <p>
+          <a href="/posts/{{blog_post.key().id()}}">{{blog_post.subject}}</a>
+        </p>
+      </div>
+      <div class="credits col-md-6 text-right">
+        <small>Posted by {{blog_post.owner}} on {{blog_post.created.date()}}</small>
+      </div>
     </div>
+    <hr>
     <div class="post_content">
       <p>{{blog_post.content}}</p>
     </div>
-    <div class="post_actions">
-      {% if blog_post.owner == username %}
-      <p><a href="/delete/{{blog_post.key().id()}}">Delete</a></p>
-      <p><a href="/edit/{{blog_post.key().id()}}">Edit</a></p>
-      {% endif %}
-      <p><a href="/comment/{{blog_post.key().id()}}">Comment</a></p>
+    <div class="post_footer row">
+      <div class="post_actions col-md-6">
+        {% if blog_post.owner == username %}
+          <p><a href="/delete/{{blog_post.key().id()}}">Delete</a> |
+          <a href="/edit/{{blog_post.key().id()}}">Edit</a> |
+        {% endif %}
+        {% if username %}
+          <a href="/comment/{{blog_post.key().id()}}">Comment</a> |
+          <a href="/like/{{blog_post.key().id()}}?source_url={{source}}">Like</a></p>
+        {% endif %}
+      </div>
+      <div class="response_counts col-md-6 text-right">
+        <small>{{blog_post.comment_count}} comments, {{blog_post.like_count}} likes</small>
+      </div>
     </div>
-  <hr>
   {% endfor %}
 {% endblock %}

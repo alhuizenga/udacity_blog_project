@@ -1,25 +1,22 @@
 {% extends "blog_wrapper.html" %}
 {% block heading %}New Post{% endblock %}
 {% block css %}
-<link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/main.css">
 {% endblock %}
 {% block content %}
-  <div class="blog_post">
-    <div class="post_form">
-      <form method="post">
-        <label>Subject<br>
-          <input type="text" name="subject" value="{{subject}}">
-        </label>
-        <br>
-        <br>
-        <label>Content<br>
-          <textarea name="content">{{content}}</textarea>
-        </label>
-        <p class="error">{{error}}</p>
-        <br>
-        <input type="submit" value="Post It!">
-      </form>
+  <form method="post">
+    <div class="form-group">
+      <label for="subject">Subject</label>
+      <input type="text" class="form-control input-lg" name="subject"
+      value="{{subject}}" placeholder="What do you want to post about?">
     </div>
-  </div>
-  <hr>
+    <div class="form-group">
+      <label for="content">Content</label>
+      <textarea class="form-control input-lg" rows="3" name="content"
+      placeholder="Have at it!">{{content}}</textarea>
+      <p class="help-block">{{error}}</p>
+    </div>
+    <button type="submit" class="btn btn-default">Submit</button>
+  </form>
 {% endblock %}

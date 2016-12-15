@@ -2,48 +2,58 @@
 {% block heading %}Forum{% endblock %}
 {% block css %}
 <link rel="stylesheet" href="../css/bootstrap.min.css">
+<link rel="stylesheet" href="../css/main.css">
 {% endblock %}
 {% block content %}
-
-  <div class="blog_post">
-    <div class="post_header">
+  <div class="subject_header row">
+    <div class="subject col-md-6">
       <p>{{subject}}</p>
-      <p>{{created}}</p>
-      <p>By {{owner}}</p>
     </div>
-    <div class="post_content">
-      <p>{{content}}</p>
+    <div class="credits col-md-6 text-right">
+      <small>Posted by {{owner}} on {{created}}</small>
     </div>
-    <div class="post_data">
-      <p>{{comment_count}} comments</p>
-      <p>{{like_count}} likes</p>
-{% if liked == True %}
-      <p>You liked this!</p>
-{% endif %}
+  </div>
+  <hr>
+  <div class="post_content">
+    <p>{{content}}</p>
+  </div>
+  <div class="post_footer row">
+    <div class="post_actions col-md-6">
+      {% if owner == username %}
+        <p><a href="/delete/{{post_id}}">Delete</a> |
+        <a href="/edit/{{post_id}}">Edit</a> |
+      {% endif %}
+      {% if username %}
+        <a href="/comment/{{post_id}}">Comment</a> |
+        {% if liked == True %}
+          <a href="/unlike/{{post_id}}?source_url={{source}}">Unlike</a>
+        {% else %}
+          <a href="/like/{{post_id}}?source_url={{source}}">Like</a></p>
+        {% endif %}
+      {% endif %}
     </div>
-    <div class="post_actions">
-{% if owner == username %}
-      <p><a href="/delete/{{post_id}}">Delete</a></p>
-      <p><a href="/edit/{{post_id}}">Edit</a></p>
-{% endif %}
-{% if username %}
-      <p><a href="/comment/{{post_id}}">Comment</a></p>
-{% if liked == True %}
-      <p><a href="/unlike/{{post_id}}?source_url={{source}}">Unlike</a></p>
-{% else %}
-      <p><a href="/like/{{post_id}}?source_url={{source}}">Like</a></p>
-{% endif %}
-{% endif %}
+    <div class="response_counts col-md-6 text-right">
+      <small>
+        {% if liked == True %}
+          You liked this! |
+        {% endif %}
+      {{comment_count}} comments, {{like_count}} likes</small>
     </div>
-    <hr>
-    <div class="comments">
-      <h2>Comments</h2>
-{% for comment in comments %}
+  </div>
+  <div class="comments">
+    <div class="comments_title">
+      <h3>Comments</h3>
+    </div>
+    {% for comment in comments %}
+      <div class="comment_header">
+        <strong>{{comment.owner}} on {{comment.created.date()}} at
+        {{comment.created.time()}}
+        </strong>
+      </div>
+      <div class="comment">
         <p>{{comment.comment}}</p>
-        <p>By {{comment.owner}} on {{comment.created.date()}}</p>
-        <br>
-{% endfor %}
-    </div>
+      </div>
+    {% endfor %}
   </div>
 {% endblock %}
 

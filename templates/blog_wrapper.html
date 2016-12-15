@@ -2,36 +2,39 @@
 <html>
   <head>
     <title>Forum</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
     {% block css %}{% endblock %}
   </head>
   <body>
-    <header>
-      <h1>{% block heading %}{% endblock %}</h1>
-      {% if username %}
-      <p>Logged in as {{username}}</p>
-      {% endif %}
-      <hr>
-    </header>
-    <nav>
-      {% if username %}
-      <p><a href="/">Home</a></p>
-      <p><a href="/logout">Logout</a></p>
-      <p><a href="/post">New Post</a></p>
-      <p><a href="/my_posts">My Posts</a></p>
-      {% else %}
-      <p><a href="/signup">Sign Up</a></p>
-      <p><a href="/login">Login</a></p>
-      {% endif %}
-      <hr>
-    </nav>
-    <content>
-      {% block content %}
-      {% endblock %}
-    </content>
-    <footer>
-      <div class="legal">
-        <p>All rights reserved.</p>
+    <div class="container">
+      <div class="header row">
+        <div class="title text-uppercase col-md-6">
+          <h1>{% block heading %}{% endblock %}</h1>
+        </div>
+        <div class="session col-md-6 text-right">
+          {% if username %}
+            <p>Logged in as {{username}}<br>
+            <a href="/logout">Logout</a></p>
+          {% else %}
+            <a href="/signup">Sign Up</a> |
+            <a href="/login">Login</a></p>
+          {% endif %}
+        </div>
       </div>
-    </footer>
+      <div class="nav">
+        <p><a href="/">Home</a>
+        {% if username %}
+          | <a href="/post">New Post</a> |
+          <a href="/my_posts">My Posts</a></p>
+        {% endif %}
+      </div>
+      <div class="content">
+        {% block content %}
+        {% endblock %}
+      </div>
+      <div class="footer">
+        <small>Built by Al Huizenga</small>
+      </div>
+    </div>
   </body>
 </html>

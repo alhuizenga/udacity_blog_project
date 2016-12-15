@@ -1,68 +1,50 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Sign Up</title>
+    <title>Forum - Sign Up</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/main.css">
   </head>
   <body>
-    <header>
-      <h2>Signup</h2>
-    </header>
-    <nav>
-      <p><a href="/">Home</a></p>
-      <p><a href="/login">Login</a></p>
-    </nav>
-    <content>
-      <form method="post">
-        <table>
-          <tr>
-            <td class="label">
-              Username
-            </td>
-            <td>
-              <input type="text" name="username" value="{{username}}">
-            </td>
-            <td class="error">
-                {{username_error}}
-                {{username_exists_error}}
-            </td>
-          </tr>
-          <tr>
-            <td class="label">
-              Password
-            </td>
-            <td>
-              <input type="password" name="password" value="{{password}}">
-            </td>
-            <td class="error">
-            {{password_error}}
-            </td>
-          </tr>
-          <tr>
-            <td class="label">
-              Verify Password
-            </td>
-            <td>
-              <input type="password" name="verify" value="{{verify}}">
-            </td>
-            <td class="error">
-                {{verify_error}}
-            </td>
-          </tr>
-          <tr>
-            <td class="label">
-              Email (optional)
-            </td>
-            <td>
-              <input type="text" name="email" value="{{email}}">
-            </td>
-            <td class="error">
-                {{email_error}}
-            </td>
-          </tr>
-        </table>
-        <input type="submit">
-      </form>
-    </content>
+    <div class="container">
+      <header>
+        <h1 class="text-uppercase">Forum</h1>
+        <h3>Sign Up</h3>
+        <small>Already have an account? <a href="/login">Login!</a></small>
+        <br>
+        <br>
+      </header>
+      <content>
+        <form method="post">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control input-lg" name="username"
+            value="{{username}}">
+            <p class="help-block">{{username_error}}</p>
+            <p class="help-block">{{username_exists_error}}</p>
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control input-lg" name="password"
+            value="{{password}}">
+            <p class="help-block">{{password_error}}</p>
+          </div>
+          <div class="form-group">
+            <label for="verify">Verify Password</label>
+            <input type="password" class="form-control input-lg" name="verify"
+            value="{{verify}}">
+            <p class="help-block">{{verify_error}}</p>
+          </div>
+          <div class="form-group">
+            <label for="emai">Email (optional)</label>
+            <input type="email" class="form-control input-lg" name="email"
+            value="{{email}}">
+            <p class="help-block">{{email_error}}</p>
+          </div>
+          <button type="submit" class="btn btn-default">Submit</button>
+        </form>
+      </content>
+    </div>
   </body>
 </html>
