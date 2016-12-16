@@ -24,14 +24,22 @@
     </div>
     <div class="post_footer row">
       <div class="post_actions col-md-6">
-        {% if blog_post.owner == username %}
-          <p><a href="/delete/{{blog_post.key().id()}}">Delete</a> |
-          <a href="/edit/{{blog_post.key().id()}}">Edit</a> |
+        <p>
+        {% if not username %}
+          <a href="/login">Comment</a> |
+          <a href="/login">Like</a>
         {% endif %}
         {% if username %}
           <a href="/comment/{{blog_post.key().id()}}">Comment</a> |
-          <a href="/like/{{blog_post.key().id()}}?source_url={{source}}">Like</a></p>
+          {% if blog_post.owner != username %}
+            <a href="/like/{{blog_post.key().id()}}?source_url={{source}}">Like</a>
+          {% endif %}
+          {% if blog_post.owner == username %}
+            <a href="/edit/{{blog_post.key().id()}}">Edit</a> |
+            <a href="/delete/{{blog_post.key().id()}}">Delete</a>
+          {% endif %}
         {% endif %}
+        </p>
       </div>
       <div class="response_counts col-md-6 text-right">
         <small>{{blog_post.comment_count}} comments, {{blog_post.like_count}} likes</small>
