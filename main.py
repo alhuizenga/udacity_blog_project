@@ -590,7 +590,7 @@ class Like(db.Model):
 
 def like_key(post_id, username):
     '''Sets the like key to the lineage of the like: post, user'''
-    return db.Key.from_path(post_id, username)
+    return db.Key.from_path("Blog_post", post_id, "User", username)
 
 def log_like(post_id, username):
     '''Logs the like as an entity in the Like kind'''
