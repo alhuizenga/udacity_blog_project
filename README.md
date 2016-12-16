@@ -1,6 +1,6 @@
 # Udacity Multi-User Blog Project
 
-[Live at https://klkj.appspot.com]
+[Live at https://klkj.appspot.com](https://klkj.appspot.com)
 
 ### Frameworks
 - [Bootstrap](http://getbootstrap.com/)
