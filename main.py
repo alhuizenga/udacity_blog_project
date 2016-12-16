@@ -99,13 +99,6 @@ class PostHandler(Handler):
 
 class ReadPostHandler(Handler):
 
-  def check_like(self, post_id, username):
-    parent = like_key(post_id, username)
-    like = Like.all().ancestor(parent).get()
-    if like:
-      if like.like_status == True:
-        return True
-
   def render_post(self,
                   subject="",
                   content="",
@@ -136,7 +129,7 @@ class ReadPostHandler(Handler):
     if self.user:
       username = self.user.name
     else:
-      username = ""
+      username = None
     post_id_int = int(post_id)
     p = Blog_post.by_id(post_id_int)
     subject = p.subject
@@ -148,8 +141,8 @@ class ReadPostHandler(Handler):
     comment_key = p.key()
     comments = Comment.all().ancestor(comment_key).order('-created').run()
     source = self.request.url
-    if username != "":
-      liked = self.check_like(post_id, username)
+    if username:
+      liked = check_like(post_id, username)
     else:
       liked = ""
     self.render_post(subject,
@@ -166,14 +159,23 @@ class ReadPostHandler(Handler):
 
 class EditPostHandler(Handler):
 
-  def render_form(self, subject="", content="", created="", username="", owner="", error=""):
+  def render_form(self,
+                subject="",
+                content="",
+                created="",
+                username="",
+                owner="",
+                error="",
+                post_id=""):
+
     self.render("editpost.html",
                 subject=subject,
                 content=content,
                 created=created,
                 username=username,
                 owner=owner,
-                error=error)
+                error=error,
+                post_id=post_id)
 
   def get(self, post_id):
     post_id = int(post_id)
@@ -184,7 +186,7 @@ class EditPostHandler(Handler):
     created = a.created.date()
     owner = a.owner
     if a.owner == username:
-      self.render_form(subject, content, created, username, owner)
+      self.render_form(subject, content, created, username, owner, post_id=post_id)
     else:
       self.redirect("/")
 
@@ -203,7 +205,7 @@ class EditPostHandler(Handler):
       self.redirect("/")
     else:
       error = "Please fill in both the Subject and Content fields."
-      self.render_form(subject, content, created, username, owner, error)
+      self.render_form(subject, content, created, username, owner, error, post_id)
 
 class DeletePostHandler(Handler):
 
@@ -267,9 +269,10 @@ class LikeHandler(Handler):
     q = Blog_post.by_id(post_id_int)
     q.like_count += 1
     q.put()
-    parent = like_key(post_id, username)
-    l = Like(parent=parent, username=username, post_id=post_id, like_status=True)
-    l.put()
+    log_like(post_id, username)
+    # parent = like_key(post_id, username)
+    # l = Like(parent=parent, username=username, post_id=post_id, like_status=True)
+    # l.put()
     source = self.request.get("source_url")
     source = str(source)
     self.redirect(source)
@@ -553,6 +556,21 @@ class Like(db.Model):
   post_id = db.StringProperty(required = True)
   username = db.StringProperty(required = True)
   like_status = db.BooleanProperty(True)
+  created = db.DateTimeProperty(auto_now_add = True)
 
 def like_key(post_id, username):
   return db.Key.from_path(post_id, username)
+
+def log_like(post_id, username):
+  parent = like_key(post_id, username)
+  l = Like(parent=parent, post_id=post_id, username=username, like_status=True)
+  l.put()
+
+def check_like(post_id, username):
+  parent = like_key(post_id, username)
+  like = Like.all().ancestor(parent).get()
+  if like:
+    if like.like_status == True:
+      return True
+  else:
+    return None
