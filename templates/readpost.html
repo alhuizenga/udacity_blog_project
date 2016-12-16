@@ -25,7 +25,7 @@
       {% endif %}
       {% if username %}
         <a href="/comment/{{post_id}}">Comment</a> |
-        {% if liked == True %}
+        {% if liked %}
           <a href="/unlike/{{post_id}}?source_url={{source}}">Unlike</a>
         {% else %}
           <a href="/like/{{post_id}}?source_url={{source}}">Like</a></p>
