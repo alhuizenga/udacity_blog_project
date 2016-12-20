@@ -4,19 +4,19 @@ import jinja2
 
 import webapp2
 
-import re
-
-import hmac
-
-import hashlib
-
-import secret
-
-import random
-
-import string
-
 from google.appengine.ext import db
+
+from user import User
+
+from blog_post import Blog_post
+
+from comment import Comment
+
+from keys import *
+
+from encryption import *
+
+from validation import *
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
@@ -102,7 +102,8 @@ class PostHandler(Handler):
         owner = username
         parent = blog_key()
 
-        if subject and content:
+        if subject and content and username:  # Both fields are populated
+                                              # and user is valid
             p = Blog_post(parent=parent, owner=owner, subject=subject, content=content)
             p.put()
             post_id = p.key().id()
@@ -234,32 +235,41 @@ class EditPostHandler(Handler):
         created = a.created.date()
         owner = a.owner
 
-        if subject and content:
-            a.subject = subject
-            a.content = content
-            a.put()
-            self.redirect("/")
+        if (username == owner):  # Check that user owns the post
+            if subject and content:  # And that subject and content are populated
+                a.subject = subject
+                a.content = content
+                a.put()
+                self.redirect("/posts/{}".format(post_id))
+            else:
+                error = "Please fill in both the Subject and Content fields."
+                self.render_form(subject,
+                                 content,
+                                 created,
+                                 username,
+                                 owner,
+                                 error,
+                                 post_id)
         else:
-            error = "Please fill in both the Subject and Content fields."
-            self.render_form(subject,
-                             content,
-                             created,
-                             username,
-                             owner,
-                             error,
-                             post_id)
+            self.redirect('/')
 
 
 class DeletePostHandler(Handler):
     '''Deletes posts from the Blog_post kind'''
 
-    def get(self, post_id):
+    def post(self):
 
+        username = self.user.name  # Check that the user is valid
+        post_id = self.request.get("post_id")
         post_id = int(post_id)
 
         a = Blog_post.by_id(post_id)
-        db.delete(a.key())
-        self.redirect('/')
+
+        if a.owner == username:  # Check that the user owns the post
+            db.delete(a.key())
+            self.redirect('/')
+        else:
+            self.redirect('/')
 
 
 class MyPostsHandler(Handler):
@@ -306,15 +316,106 @@ class CommentHandler(Handler):
         parent = q.key()  #Comment's parent is key of associated post
         subject = q.subject
 
-        if comment:
-            c = Comment(parent=parent, owner=owner, comment=comment)
-            c.put()
-            q.comment_count += 1
-            q.put()
-            self.redirect("/posts/{}".format(post_id))
+        if username:  # Check that user is valid
+            if comment:  # and comment is populated
+                c = Comment(parent=parent, owner=owner, comment=comment, subject=subject)
+                c.put()
+                q.comment_count += 1
+                q.put()
+                self.redirect("/posts/{}".format(post_id))
+            else:
+                error = "Please add your comment."
+                self.render_form(subject, comment, username, error, post_id)
         else:
-            error = "Please add your comment."
-            self.render_form(subject, comment, username, error, post_id)
+            self.redirect('/')
+
+
+class EditCommentHandler(Handler):
+    '''Gets comment updates and writes them to the Comment kind'''
+
+    def render_form(self, subject="", comment="", username="", post_id="", error=""):
+
+        self.render("editcomment.html",
+                subject=subject,
+                comment=comment,
+                username=username,
+                post_id=post_id,
+                error=error)
+
+    def get(self, post_id, comment_id):
+
+        username = self.user.name
+        comment_id = int(comment_id)
+        post_id = int(post_id)
+
+        p = Blog_post.by_id(post_id)
+        parent = p.key()  #Comment's parent is key of associated post
+
+        c = Comment.by_id(comment_id, parent)
+        subject = c.subject
+        comment = c.comment
+        owner = c.owner
+
+        if c.owner == username:  # Check to ensure current user owns comment
+            self.render_form(subject, comment, username, post_id)
+        else:
+            self.redirect("/")
+
+    def post(self, post_id, comment_id):
+
+        username = self.user.name
+        post_id_int = int(post_id)
+        comment_id = int(comment_id)
+        subject = self.request.get("subject")
+        comment = self.request.get("comment")
+
+        p = Blog_post.by_id(post_id_int)
+        parent = p.key()
+
+        c = Comment.by_id(comment_id, parent)
+        owner = c.owner
+
+        if username == owner:  # Check that user is valid and owns comment
+            if comment:
+                c.comment = comment
+                c.put()
+                self.redirect("/posts/{}".format(post_id))
+            else:
+                error = "Please add your comment."
+                self.render_form(subject,
+                                 comment,
+                                 username,
+                                 post_id,
+                                 error)
+        else:
+            self.redirect('/')
+
+
+class DeleteCommentHandler(Handler):
+    '''Deletes comments from the Comment kind'''
+
+    def post(self):
+
+        username = self.user.name  # Check that the user is valid
+
+        post_id = self.request.get("post_id")
+        post_id = int(post_id)
+
+        comment_id = self.request.get("comment_id")
+        comment_id = int(comment_id)
+
+        p = Blog_post.by_id(post_id)
+        parent = p.key()
+
+        c = Comment.by_id(comment_id, parent)
+
+        if c.owner == username:  # Check that the user owns the comment
+            db.delete(c.key())
+            p.comment_count -= 1
+            p.put()
+            self.redirect('/posts/{}'.format(post_id))
+        else:
+            self.redirect('/')
 
 
 class LikeHandler(Handler):
@@ -329,29 +430,30 @@ class LikeHandler(Handler):
 
     def post(self):
 
+        username = self.user.name
         post_id = self.request.get("post_id")
         post_id = int(post_id)
         liked = self.request.get("liked")
-        username = self.request.get("username")
+        # username = self.request.get("username")
         source = self.request.get("source")
         source = str(source)
 
         p = Blog_post.by_id(post_id)
-
-        if liked == "False":
-            if hasattr(p, username):
-                delattr(p, username)
-                p.like_count -= 1
-                p.put()
-                self.redirect(source)
-        else:
-            if hasattr(p, username):  # Has user liked post already?
-                self.redirect("/")
-            else:
-                setattr(p, username, "liked")
-                p.like_count += 1
-                p.put()
-                self.redirect(source)
+        if username != p.owner:  # Check that user is valid and doesn't own the post
+            if liked == "False":  # User clicked Unlike
+                if hasattr(p, username):  # If they've previously liked...
+                    delattr(p, username)  # Delete the like
+                    p.like_count -= 1  # And decrement the counter
+                    p.put()
+                    self.redirect(source)
+            else:                         # User clicked Like
+                if hasattr(p, username):  # If they've previously liked...
+                    self.redirect("/")    # Redirect to home page
+                else:
+                    setattr(p, username, "liked")  # If not, add the like
+                    p.like_count += 1  # And increment the counter
+                    p.put()
+                    self.redirect(source)
 
 
 class SignupHandler(Handler):
@@ -477,154 +579,18 @@ app = webapp2.WSGIApplication([
     ('/login', LoginHandler),
     ('/logout', LogoutHandler),
     ('/like', LikeHandler),
-    webapp2.Route(r'/posts/<post_id>', handler=ReadPostHandler, name='post_id'),
-    webapp2.Route(r'/edit/<post_id>', handler=EditPostHandler, name='post_id'),
-    webapp2.Route(r'/delete/<post_id>', handler=DeletePostHandler, name='post_id'),
-    webapp2.Route(r'/comment/<post_id>', handler=CommentHandler, name='post_id'),
+    ('/delete', DeletePostHandler),
+    ('/delete_comment', DeleteCommentHandler),
+    webapp2.Route(r'/posts/<post_id>', handler=ReadPostHandler, name='post'),
+    webapp2.Route(r'/edit/<post_id>', handler=EditPostHandler, name='edit_post'),
+    webapp2.Route(r'/comment/<post_id>', handler=CommentHandler, name='comment'),
+    webapp2.Route(r'/edit_comment/<post_id>/<comment_id>', handler=EditCommentHandler, name='edit_comment'),
 ], debug=True)
 
 
-# Validation functions for signup and login
-
-def validate_username(username):
-    USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
-    if username:
-        if USER_RE.match(username):
-            return username
 
 
-def check_username_exists(username):
-    u = User.by_name(username)
-    if not u:
-        return username
 
-
-def validate_password(password):
-    USER_RE = re.compile(r"^.{3,20}$")
-    if password:
-        if USER_RE.match(password):
-            return password
-
-
-def match_passwords(verify, password):
-    if verify == password:
-        return verify
-
-
-def check_for_email(email):
-    if email:
-        return email
-
-
-def validate_email(email):
-    USER_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
-    if email:
-        if USER_RE.match(email):
-            return email
-
-
-# Encryption functions for cookies and passwords
-
-SECRET = secret.SECRET
-
-def hash_str(s):
-    return hmac.new(SECRET, s).hexdigest()
-
-
-def make_secure_val(s):
-    return "{}|{}".format(s, hash_str(s))
-
-
-def check_secure_val(h):
-    val = h.split('|')[0]
-    if h == make_secure_val(val):
-        return val
-
-
-def make_salt(length=5):
-    return ''.join(random.choice(string.letters) for x in xrange(length))
-
-
-def make_pw_hash(name, pw, salt=None):
-    if not salt:
-        salt = make_salt()
-    h = hashlib.sha256(name + pw + salt).hexdigest()
-    return '{},{}'.format(salt, h)
-
-
-def valid_pw(name, password, h):
-    salt = h.split(',')[0]
-    return h == make_pw_hash(name, password, salt)
-
-
-# Kinds
-
-class User(db.Model):
-    name = db.StringProperty(required=True)
-    pw_hash = db.StringProperty(required=True)
-    email = db.StringProperty()
-    created = db.DateTimeProperty(auto_now_add=True)
-
-    @classmethod
-    def by_id(cls, uid):
-        return User.get_by_id(uid, parent=users_key())
-
-    @classmethod
-    def by_name(cls, name):
-        u = User.all().filter('name = ', name).get()
-        return u
-
-    @classmethod
-    def register(cls, name, pw, email=None):
-        pw_hash = make_pw_hash(name, pw)
-        return User(parent=users_key(),
-                    name=name,
-                    pw_hash=pw_hash,
-                    email=email)
-
-    @classmethod
-    def login(cls, name, pw):
-        u = cls.by_name(name)
-        if u and valid_pw(name, pw, u.hash):
-            return u
-
-
-def users_key(group='default'):
-    '''Sets parent key for all users'''
-    return db.Key.from_path('users', group)
-
-
-class Blog_post(db.Expando):
-    '''Use the Expando class so that we can add dynamic user
-    attributes to post entities to track likes.
-    '''
-
-    owner = db.StringProperty(required=True)
-    subject = db.StringProperty(required=True)
-    content = db.TextProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    last_modified = db.DateTimeProperty()
-    comment_count = db.IntegerProperty(default=0)
-    like_count = db.IntegerProperty(default=0)
-
-    @classmethod
-    def by_id(cls, post_id):
-        return Blog_post.get_by_id(post_id, parent=blog_key())
-
-
-def blog_key(name='default'):
-    '''Sets parent key for all blog posts'''
-    return db.Key.from_path('blogs', name)
-
-
-class Comment(db.Model):
-    owner = db.StringProperty(required=True)
-    comment = db.TextProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-
-    @classmethod
-    def by_id(cls, comment_id, parent):
-        return Comment.get_by_id(comment_id, parent)
 
 
 
