@@ -10,6 +10,8 @@ import hmac
 
 import hashlib
 
+import secret
+
 import random
 
 import string
@@ -59,13 +61,17 @@ class Handler(webapp2.RequestHandler):
 
 
 class BlogHandler(Handler):
-    '''Manages the forum home page'''
+    '''Handles the forum home page'''
 
     def render_blog(self, blog_posts="", username="", source=""):
+
         if self.user:
-            username = self.user.name  # check if user is logged in
-        source = self.request.url
+            username = self.user.name  # check if user is logged in and get name
+
+        source = self.request.url  # Posted to the Like handler so it can redirect back
+
         blog_posts = Blog_post.all().ancestor(blog_key()).order('-created').run()
+
         self.render("home.html",
                     blog_posts=blog_posts,
                     username=username,
@@ -76,7 +82,7 @@ class BlogHandler(Handler):
 
 
 class PostHandler(Handler):
-    '''Receives new forum posts and writes them to the Blog_post kind'''
+    '''Gets new posts and writes them to the Blog_post kind'''
 
     def render_form(self, subject="", content="", username="", error=""):
         self.render("newpost.html",
@@ -95,6 +101,7 @@ class PostHandler(Handler):
         content = self.request.get("content")
         owner = username
         parent = blog_key()
+
         if subject and content:
             p = Blog_post(parent=parent, owner=owner, subject=subject, content=content)
             p.put()
@@ -106,7 +113,7 @@ class PostHandler(Handler):
 
 
 class ReadPostHandler(Handler):
-    '''Manages the dedicated page for each post'''
+    '''Manages the permalink page for each post'''
 
     def render_post(self,
                     subject="",
@@ -120,6 +127,7 @@ class ReadPostHandler(Handler):
                     post_id="",
                     source="",
                     liked=""):
+
         self.render("readpost.html",
                     subject=subject,
                     content=content,
@@ -134,25 +142,31 @@ class ReadPostHandler(Handler):
                     liked=liked)
 
     def get(self, post_id):
+
         if self.user:
             username = self.user.name
         else:
             username = None
+
         post_id_int = int(post_id)
+
         p = Blog_post.by_id(post_id_int)
         subject = p.subject
         content = p.content
-        created = p.created.date()
+        created = p.created
         owner = p.owner
         comment_count = p.comment_count
         like_count = p.like_count
         comment_key = p.key()
-        comments = Comment.all().ancestor(comment_key).order('-created').run()
         source = self.request.url
+
+        comments = Comment.all().ancestor(comment_key).order('-created').run()
+
         if username:
-            liked = check_like(post_id, username)
+            liked = hasattr(p, username)
         else:
-            liked = ""
+            liked=""
+
         self.render_post(subject,
                          content,
                          created,
@@ -167,7 +181,7 @@ class ReadPostHandler(Handler):
 
 
 class EditPostHandler(Handler):
-    '''Receives post updates and writes them to the Blog_post kind'''
+    '''Gets post updates and writes them to the Blog_post kind'''
 
     def render_form(self,
                     subject="",
@@ -177,6 +191,7 @@ class EditPostHandler(Handler):
                     owner="",
                     error="",
                     post_id=""):
+
         self.render("editpost.html",
                     subject=subject,
                     content=content,
@@ -187,14 +202,17 @@ class EditPostHandler(Handler):
                     post_id=post_id)
 
     def get(self, post_id):
+
         post_id = int(post_id)
         username = self.user.name
+
         a = Blog_post.by_id(post_id)
         subject = a.subject
         content = a.content
         created = a.created.date()
         owner = a.owner
-        if a.owner == username:
+
+        if a.owner == username:  # Check to ensure current user owns post
             self.render_form(subject,
                              content,
                              created,
@@ -205,13 +223,17 @@ class EditPostHandler(Handler):
             self.redirect("/")
 
     def post(self, post_id):
+
         post_id = int(post_id)
         username = self.user.name
+
         subject = self.request.get("subject")
         content = self.request.get("content")
+
         a = Blog_post.by_id(post_id)
         created = a.created.date()
         owner = a.owner
+
         if subject and content:
             a.subject = subject
             a.content = content
@@ -232,14 +254,16 @@ class DeletePostHandler(Handler):
     '''Deletes posts from the Blog_post kind'''
 
     def get(self, post_id):
+
         post_id = int(post_id)
+
         a = Blog_post.by_id(post_id)
         db.delete(a.key())
         self.redirect('/')
 
 
 class MyPostsHandler(Handler):
-    '''Manages page for displaying all of a user's posts'''
+    '''Handles the page for displaying all posts from a user'''
 
     def render_posts(self, blog_posts="", username=""):
         username = self.user.name
@@ -251,7 +275,7 @@ class MyPostsHandler(Handler):
 
 
 class CommentHandler(Handler):
-    '''Receives comments and writes them to the Comment kind'''
+    '''Gets comments and writes them to the Comment kind'''
 
     def render_form(self, subject="", comment="", username="", error="", post_id=""):
         self.render("comment.html",
@@ -262,21 +286,26 @@ class CommentHandler(Handler):
                     post_id=post_id)
 
     def get(self, post_id):
+
         username = self.user.name
         post_id = int(post_id)
+
         q = Blog_post.by_id(post_id)
         subject = q.subject
         self.render_form(subject=subject, username=username, post_id=post_id)
 
     def post(self, post_id):
+
         username = self.user.name
         comment = self.request.get("comment")
         owner = username
         post_id = self.request.get("post_id")
         post_id = int(post_id)
+
         q = Blog_post.by_id(post_id)
-        parent = q.key()  #Set the parent for each comment to the associated post entity key
+        parent = q.key()  #Comment's parent is key of associated post
         subject = q.subject
+
         if comment:
             c = Comment(parent=parent, owner=owner, comment=comment)
             c.put()
@@ -287,43 +316,42 @@ class CommentHandler(Handler):
             error = "Please add your comment."
             self.render_form(subject, comment, username, error, post_id)
 
+
 class LikeHandler(Handler):
     '''Handles like requests.
-    Increments the like count for the associated post.
-    Adds a like to the Like kind and sets the path to associated post and username
+    Each Blog_post entity has a like counter, and a dynamic attribute
+    for each user that has liked it.
+    When user clicks Like, handler checks for like attribute, creates
+    it if it doesn't exist, and increments the counter.
+    When user clicks Unlike, handler checks for like attribute, deletes
+    it if it exists, and decrements the counter.
     '''
 
-    def get(self, post_id):
-        username = self.user.name
-        post_id_int = int(post_id)
-        q = Blog_post.by_id(post_id_int)
-        q.like_count += 1
-        q.put()
-        log_like(post_id, username)
-        source = self.request.get("source_url")
+    def post(self):
+
+        post_id = self.request.get("post_id")
+        post_id = int(post_id)
+        liked = self.request.get("liked")
+        username = self.request.get("username")
+        source = self.request.get("source")
         source = str(source)
-        self.redirect(source)
 
+        p = Blog_post.by_id(post_id)
 
-class UnlikeHandler(Handler):
-    '''Handles Unlike requests.
-    Checks the Like kind to see if a like exists for this user and post
-    If so, sets the like status to False
-    '''
-
-    def get(self, post_id):
-        username = self.user.name
-        post_id_int = int(post_id)
-        q = Blog_post.by_id(post_id_int)
-        q.like_count -= 1
-        q.put()
-        parent = like_key(post_id, username)
-        like = Like.all().ancestor(parent).get()
-        like.like_status = False
-        like.put()
-        source = self.request.get("source_url")
-        source = str(source)
-        self.redirect(source)
+        if liked == "False":
+            if hasattr(p, username):
+                delattr(p, username)
+                p.like_count -= 1
+                p.put()
+                self.redirect(source)
+        else:
+            if hasattr(p, username):  # Has user liked post already?
+                self.redirect("/")
+            else:
+                setattr(p, username, "liked")
+                p.like_count += 1
+                p.put()
+                self.redirect(source)
 
 
 class SignupHandler(Handler):
@@ -332,6 +360,7 @@ class SignupHandler(Handler):
         self.render("register.html")
 
     def post(self):
+
         name = self.request.get('username')  # Get form post parameters
         pw = self.request.get('password')
         verify = self.request.get('verify')
@@ -447,12 +476,11 @@ app = webapp2.WSGIApplication([
     ('/signup', SignupHandler),
     ('/login', LoginHandler),
     ('/logout', LogoutHandler),
+    ('/like', LikeHandler),
     webapp2.Route(r'/posts/<post_id>', handler=ReadPostHandler, name='post_id'),
     webapp2.Route(r'/edit/<post_id>', handler=EditPostHandler, name='post_id'),
     webapp2.Route(r'/delete/<post_id>', handler=DeletePostHandler, name='post_id'),
     webapp2.Route(r'/comment/<post_id>', handler=CommentHandler, name='post_id'),
-    webapp2.Route(r'/like/<post_id>', handler=LikeHandler, name='post_id'),
-    webapp2.Route(r'/unlike/<post_id>', handler=UnlikeHandler, name='post_id'),
 ], debug=True)
 
 
@@ -464,10 +492,12 @@ def validate_username(username):
         if USER_RE.match(username):
             return username
 
+
 def check_username_exists(username):
     u = User.by_name(username)
     if not u:
         return username
+
 
 def validate_password(password):
     USER_RE = re.compile(r"^.{3,20}$")
@@ -475,13 +505,16 @@ def validate_password(password):
         if USER_RE.match(password):
             return password
 
+
 def match_passwords(verify, password):
     if verify == password:
         return verify
 
+
 def check_for_email(email):
     if email:
         return email
+
 
 def validate_email(email):
     USER_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
@@ -492,21 +525,25 @@ def validate_email(email):
 
 # Encryption functions for cookies and passwords
 
-SECRET = 'dirtylittlesecret'
+SECRET = secret.SECRET
 
 def hash_str(s):
     return hmac.new(SECRET, s).hexdigest()
 
+
 def make_secure_val(s):
     return "{}|{}".format(s, hash_str(s))
+
 
 def check_secure_val(h):
     val = h.split('|')[0]
     if h == make_secure_val(val):
         return val
 
+
 def make_salt(length=5):
     return ''.join(random.choice(string.letters) for x in xrange(length))
+
 
 def make_pw_hash(name, pw, salt=None):
     if not salt:
@@ -514,9 +551,11 @@ def make_pw_hash(name, pw, salt=None):
     h = hashlib.sha256(name + pw + salt).hexdigest()
     return '{},{}'.format(salt, h)
 
+
 def valid_pw(name, password, h):
     salt = h.split(',')[0]
     return h == make_pw_hash(name, password, salt)
+
 
 # Kinds
 
@@ -549,12 +588,17 @@ class User(db.Model):
         if u and valid_pw(name, pw, u.hash):
             return u
 
+
 def users_key(group='default'):
     '''Sets parent key for all users'''
     return db.Key.from_path('users', group)
 
 
-class Blog_post(db.Model):
+class Blog_post(db.Expando):
+    '''Use the Expando class so that we can add dynamic user
+    attributes to post entities to track likes.
+    '''
+
     owner = db.StringProperty(required=True)
     subject = db.StringProperty(required=True)
     content = db.TextProperty(required=True)
@@ -566,6 +610,7 @@ class Blog_post(db.Model):
     @classmethod
     def by_id(cls, post_id):
         return Blog_post.get_by_id(post_id, parent=blog_key())
+
 
 def blog_key(name='default'):
     '''Sets parent key for all blog posts'''
@@ -580,33 +625,6 @@ class Comment(db.Model):
     @classmethod
     def by_id(cls, comment_id, parent):
         return Comment.get_by_id(comment_id, parent)
-
-
-class Like(db.Model):
-    post_id = db.StringProperty(required=True)
-    username = db.StringProperty(required=True)
-    like_status = db.BooleanProperty(True)
-    created = db.DateTimeProperty(auto_now_add=True)
-
-def like_key(post_id, username):
-    '''Sets the like key to the lineage of the like: post, user'''
-    return db.Key.from_path("Blog_post", post_id, "User", username)
-
-def log_like(post_id, username):
-    '''Logs the like as an entity in the Like kind'''
-    parent = like_key(post_id, username)
-    l = Like(parent=parent, post_id=post_id, username=username, like_status=True)
-    l.put()
-
-def check_like(post_id, username):
-    '''Checks the Like kind for whether a like exists and is set to True'''
-    parent = like_key(post_id, username)
-    like = Like.all().ancestor(parent).get()
-    if like:
-        if like.like_status == True:
-            return True
-    else:
-        return None
 
 
 

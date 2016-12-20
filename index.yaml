@@ -11,6 +11,18 @@ indexes:
 # your application using appcfg.py.
 
 - kind: Blog_post
+  properties:
+  - name: owner
+  - name: created
+    direction: desc
+
+- kind: Blog_post
+  ancestor: yes
+  properties:
+  - name: created
+    direction: desc
+
+- kind: Comment
   ancestor: yes
   properties:
   - name: created
