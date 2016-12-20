@@ -3,18 +3,17 @@
 {% block css %}
   <link rel="stylesheet" href="css/bootstrap.min.css">
   <link rel="stylesheet" href="css/main.css">
-  <script src="js/jquery-3.1.1.min.js"></script>
-  <script src="js/bootstrap-confirmation.min.js"></script>
+
 {% endblock %}
 {% block content %}
   {% for blog_post in blog_posts %}
     <div class="subject_header row">
-      <div class="subject col-md-6">
+      <div class="subject col-md-8">
         <p>
           <a href="/posts/{{blog_post.key().id()}}">{{blog_post.subject}}</a>
         </p>
       </div>
-      <div class="credits col-md-6 text-right">
+      <div class="credits col-md-4 text-right">
         <small>Posted by {{blog_post.owner}} on {{blog_post.created.date()}}</small>
       </div>
     </div>
@@ -24,23 +23,57 @@
     </div>
     <div class="post_footer row">
       <div class="post_actions col-md-6">
-        <p>
         {% if not username %}
-          <a href="/login">Comment</a> |
-          <a href="/login">Like</a>
+          <form action="/login">
+            <div class="btn-group" data-toggle="buttons">
+              <label class="btn btn-primary btn-sm">
+                <input type="radio" name="liked" value="True"
+                onChange='this.form.submit();'>Like
+              </label>
+              <label class="btn btn-primary btn-sm">
+                <input type="radio" name="liked" value="False"
+                onChange='this.form.submit();'>Unlike
+              </label>
+            </div>
+          </form>
+          <br>
+          <p><a href="/login">Add a Comment</a></p>
+          </div>
         {% endif %}
         {% if username %}
-          <a href="/comment/{{blog_post.key().id()}}">Comment</a> |
-          {% if blog_post.owner != username %}
-            <a href="/like/{{blog_post.key().id()}}?source_url={{source}}">Like</a>
-          {% endif %}
-          {% if blog_post.owner == username %}
-            <a href="/edit/{{blog_post.key().id()}}">Edit</a> |
-            <a href="/delete/{{blog_post.key().id()}}">Delete</a>
-          {% endif %}
+          {% if username != blog_post.owner %}
+            <form action="/like" method="post">
+              <div class="btn-group" data-toggle="buttons">
+                {% if blog_post|attr(username) %}
+                  <label class="btn btn-primary btn-sm active">
+                    <input type="radio" name="liked" value="True" checked
+                    onChange='this.form.submit();'>Like
+                  </label>
+                  <label class="btn btn-primary btn-sm">
+                    <input type="radio" name="liked" value="False"
+                     onChange='this.form.submit();'>Unlike
+                  </label>
+                {% else %}
+                  <label class="btn btn-primary btn-sm">
+                    <input type="radio" name="liked" value="True"
+                    onChange='this.form.submit();'>Like
+                  </label>
+                  <label class="btn btn-primary btn-sm active">
+                    <input type="radio" name="liked" value="False" checked
+                     onChange='this.form.submit();'>Unlike
+                  </label>
+                {% endif %}
+                <input type="hidden" name="post_id"
+                value="{{blog_post.key().id()}}">
+                <input type="hidden" name="username" value="{{username}}">
+                <input type="hidden" name="source" value="{{source}}">
+              </div>
+            </form>
+            <br>
+            {% endif %}
+          <p><a href="/comment/{{blog_post.key().id()}}">Add a Comment</a></p>
+        </div>
         {% endif %}
-        </p>
-      </div>
       <div class="response_counts col-md-6 text-right">
         <small>{{blog_post.comment_count}} comments, {{blog_post.like_count}} likes</small>
       </div>

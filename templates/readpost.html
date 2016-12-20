@@ -6,11 +6,11 @@
 {% endblock %}
 {% block content %}
   <div class="subject_header row">
-    <div class="subject col-md-6">
+    <div class="subject col-md-8">
       <p>{{subject}}</p>
     </div>
-    <div class="credits col-md-6 text-right">
-      <small>Posted by {{owner}} on {{created}}</small>
+    <div class="credits col-md-4 text-right">
+      <small>Posted by {{owner}} on {{created.date()}}</small>
     </div>
   </div>
   <hr>
@@ -19,18 +19,54 @@
   </div>
   <div class="post_footer row">
     <div class="post_actions col-md-6">
-      {% if owner == username %}
-        <p><a href="/delete/{{post_id}}">Delete</a> |
-        <a href="/edit/{{post_id}}">Edit</a> |
-      {% endif %}
-      {% if username %}
-        <a href="/comment/{{post_id}}">Comment</a> |
-        {% if liked %}
-          <a href="/unlike/{{post_id}}?source_url={{source}}">Unlike</a>
-        {% else %}
-          <a href="/like/{{post_id}}?source_url={{source}}">Like</a></p>
+        {% if not username %}
+          <form action="/login">
+            <div class="btn-group" data-toggle="buttons">
+              <label class="btn btn-primary btn-sm">
+                <input type="radio" name="liked" value="True"
+                onChange='this.form.submit();'>Like
+              </label>
+              <label class="btn btn-primary btn-sm">
+                <input type="radio" name="liked" value="False"
+                 onChange='this.form.submit();'>Unlike
+              </label>
+            </div>
+          </form>
         {% endif %}
-      {% endif %}
+        {% if username %}
+          {% if owner != username %}
+            <form action="/like" method="post">
+              <div class="btn-group" data-toggle="buttons">
+                  {% if liked == True %}
+                    <label class="btn btn-primary btn-sm active">
+                      <input type="radio" name="liked" value="True" checked
+                      onChange='this.form.submit();'>Like
+                    </label>
+                    <label class="btn btn-primary btn-sm">
+                      <input type="radio" name="liked" value="False"
+                       onChange='this.form.submit();'>Unlike
+                    </label>
+                  {% else %}
+                    <label class="btn btn-primary btn-sm">
+                      <input type="radio" name="liked" value="True"
+                      onChange='this.form.submit();'>Like
+                    </label>
+                    <label class="btn btn-primary btn-sm active">
+                      <input type="radio" name="liked" value="False" checked
+                       onChange='this.form.submit();'>Unlike
+                    </label>
+                  {% endif %}
+                  <input type="hidden" name="post_id" value="{{post_id}}">
+                  <input type="hidden" name="username" value="{{username}}">
+                  <input type="hidden" name="source" value="{{source}}">
+              </div>
+            </form>
+          {% endif %}
+          {% if owner == username %}
+            <p><a href="/edit/{{post_id}}">Edit</a> |
+            <a href="/delete/{{post_id}}">Delete</a></p>
+          {% endif %}
+        {% endif %}
     </div>
     <div class="response_counts col-md-6 text-right">
       <small>
@@ -43,6 +79,11 @@
   <div class="comments">
     <div class="comments_title">
       <h3>Comments</h3>
+      {% if username %}
+        <p><a href="/comment/{{post_id}}">Add a Comment</a>
+      {% else %}
+        <p><a href="/login">Add a Comment</a>
+      {% endif %}
     </div>
     {% for comment in comments %}
       <div class="comment_header">
