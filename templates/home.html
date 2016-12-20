@@ -75,7 +75,10 @@
         </div>
         {% endif %}
       <div class="response_counts col-md-6 text-right">
-        <small>{{blog_post.comment_count}} comments, {{blog_post.like_count}} likes</small>
+        <small>
+          {% if blog_post|attr(username) %} You liked this! |{% endif %}
+          {{blog_post.comment_count}} comments, {{blog_post.like_count}} likes
+        </small>
       </div>
     </div>
   {% endfor %}

@@ -1,8 +1,8 @@
 {% extends "blog_wrapper.html" %}
 {% block heading %}Forum{% endblock %}
 {% block css %}
-<link rel="stylesheet" href="../css/bootstrap.min.css">
-<link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/main.css">
 {% endblock %}
 {% block content %}
   <div class="subject_header row">
@@ -63,17 +63,28 @@
             </form>
           {% endif %}
           {% if owner == username %}
-            <p><a href="/edit/{{post_id}}">Edit</a> |
-            <a href="/delete/{{post_id}}">Delete</a></p>
+            <div class="row">
+              <div class="edit_link col-md-1">
+                <p><a href="/edit/{{post_id}}">Edit</a></p>
+              </div>
+              <div class="col-md-1">|</div>
+              <div class="delete_button col-md-1">
+                <form
+                onsubmit="return confirm
+                ('Are you sure you want to delete the post and all comments?');"
+                action="/delete" method="post">
+                  <input type="hidden" name="post_id" value="{{post_id}}">
+                  <button type="submit" class="btn btn-link">Delete</button>
+                </form>
+              </div>
+            </div>
           {% endif %}
         {% endif %}
     </div>
     <div class="response_counts col-md-6 text-right">
       <small>
-        {% if liked == True %}
-          You liked this! |
-        {% endif %}
-      {{comment_count}} comments, {{like_count}} likes</small>
+        {% if liked == True %}You liked this! |{% endif %}
+        {{comment_count}} comments, {{like_count}} likes</small>
     </div>
   </div>
   <div class="comments">
@@ -93,6 +104,31 @@
       </div>
       <div class="comment">
         <p>{{comment.comment}}</p>
+      </div>
+      <div class="comment_footer">
+        {% if comment.owner == username %}
+          <div class="row">
+          <div class="col-md-6">
+          <div class="row">
+            <div class="edit_link col-md-1">
+              <p><a href="/edit_comment/{{post_id}}/{{comment.key().id()}}"
+              class="edit_href">Edit</a></p>
+            </div>
+            <div class="col-md-1">|</div>
+            <div class="delete_button col-md-1">
+              <form
+              onsubmit="return confirm
+              ('Are you sure you want to delete the comment?');"
+              action="/delete_comment" method="post">
+                <input type="hidden" name="comment_id" value="{{comment.key().id()}}">
+                <input type="hidden" name="post_id" value="{{post_id}}">
+                <button type="submit" class="btn btn-link">Delete</button>
+              </form>
+            </div>
+          </div>
+          </div>
+          </div>
+        {% endif %}
       </div>
     {% endfor %}
   </div>
